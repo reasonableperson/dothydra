@@ -6,8 +6,11 @@ local special_bindings = {
     V = "Cisco AnyConnect Secure Mobility Client"
 }
 
-local function first_letter(string)
-    return string.upper(string.sub(string, 1, 1))
+-- Used to grab the first letter of an app title.
+-- iTunes -> I, Microsoft Outlook -> O
+local function first_letter(str)
+    str = str.gsub(str, "Microsoft ", "")
+    return string.upper(string.sub(str, 1, 1))
 end
 
 -- Find applications starting with this letter.
