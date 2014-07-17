@@ -48,11 +48,7 @@ end
 -- Guess which of the filtered apps are wanted, and focus it.
 local function select_app(key)
     local apps = filter_apps(key)
-    if #apps == 1 then
-        hydra.alert(apps[1]:title(), 1)
-        local success = apps[1]:activate()
-        if not success then hydra.alert("no windows?") end
-    elseif #apps > 1 then
+    if #apps > 0 then
         cycle_apps(apps)
     else
         hydra.alert("No apps starting with " .. key .. ".", 1)
