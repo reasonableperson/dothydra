@@ -20,18 +20,20 @@ local function filter_apps(key)
                            a:title() == special_bindings[key]
         return  it_matches and
                 a:kind() == 1 and   -- must be in the Dock
-                #a:allwindows() > 0 -- must have live windows
+                #a:visiblewindows() > 0 -- must have live windows
     end)
 end
 
 -- If multiple apps match the key, don't repeatedly select the
 -- app that's already open.
 local function cycle_apps(apps)
-    local current_app = window.focusedwindow():application()
+    local win = window.focusedwindow()
+    local app = nil
+    if win then app = win:application() end
     local current_app_index = nil
     for i, a in pairs(apps) do
         hydra.alert(a:title(), 1)
-        if a:title() == current_app:title() then
+        if app and a:title() == app:title() then
             current_app_index = i
         end
     end
@@ -58,6 +60,7 @@ end
 -- Set modal key.
 local modal = modalkey.new({"ctrl"}, "E")
 modal:bind({}, "ESCAPE", function() modal:exit() end)
+modal:bind({"ctrl"}, "E", function() modal:exit() end)
 
 -- Bind filter_apps to every alphanumeric key.
 local alphanum = {}
