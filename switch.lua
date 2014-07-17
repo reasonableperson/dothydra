@@ -30,6 +30,7 @@ local function cycle_apps(apps)
     local current_app = window.focusedwindow():application()
     local current_app_index = nil
     for i, a in pairs(apps) do
+        hydra.alert(a:title(), 1)
         if a:title() == current_app:title() then
             current_app_index = i
         end
@@ -45,8 +46,8 @@ local function cycle_apps(apps)
 end
 
 -- Guess which of the filtered apps are wanted, and focus it.
-local function select_app(initial)
-    local apps = filter_apps(initial)
+local function select_app(key)
+    local apps = filter_apps(key)
     if #apps == 1 then
         hydra.alert(apps[1]:title(), 1)
         local success = apps[1]:activate()
@@ -54,12 +55,12 @@ local function select_app(initial)
     elseif #apps > 1 then
         cycle_apps(apps)
     else
-        hydra.alert("No apps.", 1)
+        hydra.alert("No apps starting with " .. key .. ".", 1)
     end
 end
 
 -- Set modal key.
-local modal = modalkey.new({"ctrl"}, "Y")
+local modal = modalkey.new({"ctrl"}, "E")
 modal:bind({}, "ESCAPE", function() modal:exit() end)
 
 -- Bind filter_apps to every alphanumeric key.
