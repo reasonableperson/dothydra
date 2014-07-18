@@ -58,18 +58,12 @@ local function select_app(key)
     end
 end
 
--- Set modal key.
-local modal = modalkey.new({"ctrl"}, "E")
-modal:bind({}, "ESCAPE", function() modal:exit() end)
-modal:bind({"ctrl"}, "E", function() modal:exit() end)
-
--- Bind filter_apps to every alphanumeric key.
-local alphanum = {}
-for i=1,26  do alphanum[i] = string.char(i+64) end -- [a-z]
-for i=27,36 do alphanum[i] = string.char(i+21) end -- [0-9]
-for i=1,36 do
-    modal:bind({}, alphanum[i], function()
-        select_app(alphanum[i])
-        modal:exit()
+-- Bind filter_apps to (almost) every alphanumeric key.
+local alphanum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+for i = 1, #alphanum do
+    local char = alphanum:sub(i,i)
+    ctrl_e:bind({}, char, function()
+        select_app(char)
+        ctrl_e:exit()
     end)
 end
