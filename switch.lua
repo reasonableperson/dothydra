@@ -20,7 +20,7 @@ local function filter_apps(key)
                            a:title() == special_bindings[key]
         return  it_matches and
                 a:kind() == 1 and   -- must be in the Dock
-                #a:visiblewindows() > 0 -- must have live windows
+                #a:allwindows() > 0 -- must have live windows
     end)
 end
 
@@ -44,6 +44,7 @@ local function cycle_apps(apps)
         index = current_app_index + 1
         if index > #apps then index = 1 end
     end
+    apps[index]:unhide()
     apps[index]:activate()
 end
 
