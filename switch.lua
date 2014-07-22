@@ -1,6 +1,7 @@
 -- Special bindings.
 local special_bindings = {
-    X = "Excel",
+    F = "Firefox",
+    X = "Microsoft Excel",
     T = "iTerm",
     W = "VMware Fusion",
     V = "Cisco AnyConnect Secure Mobility Client"
@@ -15,13 +16,18 @@ end
 
 -- Find applications starting with this letter.
 local function filter_apps(key)
-    return fnutils.filter(application.runningapplications(), function(a)
+    local apps = fnutils.filter(application.runningapplications(), function(a)
         local it_matches = key == first_letter(a:title()) or
                            a:title() == special_bindings[key]
         return  it_matches and
                 a:kind() == 1 and   -- must be in the Dock
                 #a:allwindows() > 0 -- must have live windows
     end)
+    -- Apps with a special binding should be selected first.
+    table.sort(apps, function(a, b)
+        return a:title() == special_bindings[key]
+    end)
+    return apps
 end
 
 -- If multiple apps match the key, don't repeatedly select the
