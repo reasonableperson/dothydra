@@ -2,8 +2,8 @@ ext.grid = {}
 
 ext.grid.MARGINX = 0
 ext.grid.MARGINY = 0
-ext.grid.GRIDWIDTH = 3
-ext.grid.GRIDHEIGHT = 3
+ext.grid.GRIDWIDTH = 6
+ext.grid.GRIDHEIGHT = 4
 
 local function round(num, idp)
   local mult = 10^(idp or 0)
@@ -54,7 +54,7 @@ function ext.grid.adjustwidth(by)
   fnutils.map(window.visiblewindows(), ext.grid.snap)
 end
 
-function ext.grid.adjust_focused_window(fn)
+local function adjust_focused_window(fn)
   local win = window.focusedwindow()
   local f = ext.grid.get(win)
   fn(f)
@@ -78,41 +78,91 @@ function ext.grid.pushwindow_prevscreen()
 end
 
 function ext.grid.pushwindow_left()
-  ext.grid.adjust_focused_window(function(f) f.x = math.max(f.x - 1, 0) end)
+  adjust_focused_window(function(f) f.x = math.max(f.x - 1, 0) end)
 end
 
 function ext.grid.pushwindow_right()
-  ext.grid.adjust_focused_window(function(f) f.x = math.min(f.x + 1, ext.grid.GRIDWIDTH - f.w) end)
-end
-
-function ext.grid.resizewindow_wider()
-  ext.grid.adjust_focused_window(function(f) f.w = math.min(f.w + 1, ext.grid.GRIDWIDTH - f.x) end)
-end
-
-function ext.grid.resizewindow_thinner()
-  ext.grid.adjust_focused_window(function(f) f.w = math.max(f.w - 1, 1) end)
+  adjust_focused_window(function(f) f.x = math.min(f.x + 1, ext.grid.GRIDWIDTH - f.w) end)
 end
 
 function ext.grid.pushwindow_down()
-  ext.grid.adjust_focused_window(function(f)
-    f.y = math.min(f.y + 1, ext.grid.GRIDHEIGHT)
+  adjust_focused_window(function(f)
+    f.y = math.min(f.y + 1, ext.grid.GRIDHEIGHT - f.y)
   end)
 end
 
 function ext.grid.pushwindow_up()
-  ext.grid.adjust_focused_window(function(f)
-    f.y = math.min(f.y - 1, ext.grid.GRIDHEIGHT)
+  adjust_focused_window(function(f)
+    f.y = math.min(f.y - 1, ext.grid.GRIDHEIGHT - f.y)
   end)
 end
 
-function ext.grid.resizewindow_taller()
-  ext.grid.adjust_focused_window(function(f)
-    f.y = 0; f.h = math.min(f.h + 1, ext.grid.GRIDHEIGHT)
+-- Resize the window, or do nothing if we've hit a grid boundary.
+-- We won't actually bind to these, because...
+local function wider()
+  adjust_focused_window(function(f)
+    f.w = math.min(f.w + 1, ext.grid.GRIDWIDTH)
+  end)
+end
+local function thinner()
+  adjust_focused_window(function(f)
+    f.w = math.max(f.w - 1, 1)
+  end)
+end
+local function taller()
+  adjust_focused_window(function(f)
+    f.h = math.min(f.h + 1, ext.grid.GRIDHEIGHT)
+  end)
+end
+local function shorter()
+  adjust_focused_window(function(f)
+    f.h = math.max(f.h - 1, 1)
   end)
 end
 
-function ext.grid.resizewindow_shorter()
-  ext.grid.adjust_focused_window(function(f)
-    f.y = 0; f.h = math.min(f.h - 1, ext.grid.GRIDHEIGHT)
-  end)
+-- ...resize bindings work differently when we're at the bottom or right screen
+-- edges. Let's detect those cases.
+local function at_bottom()
+  local win = window.focusedwindow()
+  local f = ext.grid.get(win)
+  return f.y ~= 0 and f.y + f.h == ext.grid.GRIDHEIGHT
 end
+local function at_right()
+  local win = window.focusedwindow()
+  local f = ext.grid.get(win)
+  return f.x ~= 0 and f.x + f.w == ext.grid.GRIDWIDTH
+end
+
+-- Here are the functions we'll actually bind.
+function ext.grid.resizewindow_right()
+  hydra.alert("→", 1)
+  if at_right(f) then thinner(f); ext.grid.pushwindow_right()
+  else                wider(f) end
+end
+function ext.grid.resizewindow_left()
+  hydra.alert("←", 1)
+  if at_right(f) then wider(f); ext.grid.pushwindow_left()
+  else                thinner(f) end
+end
+function ext.grid.resizewindow_up()
+  hydra.alert("↑", 1)
+  if at_bottom(f) then taller(f); ext.grid.pushwindow_up()
+  else                 shorter(f) end
+end
+function ext.grid.resizewindow_down()
+  hydra.alert("↓", 1)
+  if at_bottom(f) then shorter(f); ext.grid.pushwindow_down()
+  else                 taller(f) end
+end
+
+-- And now we will actually bind them.
+ctrl_r:bind({}, "[", ext.grid.pushwindow_prevscreen)
+ctrl_r:bind({}, "]", ext.grid.pushwindow_nextscreen)
+ctrl_r:bind({}, "H", ext.grid.pushwindow_left)
+ctrl_r:bind({}, "J", ext.grid.pushwindow_down)
+ctrl_r:bind({}, "K", ext.grid.pushwindow_up)
+ctrl_r:bind({}, "L", ext.grid.pushwindow_right)
+ctrl_r:bind({"shift"}, "H", ext.grid.resizewindow_left)
+ctrl_r:bind({"shift"}, "J", ext.grid.resizewindow_down)
+ctrl_r:bind({"shift"}, "K", ext.grid.resizewindow_up)
+ctrl_r:bind({"shift"}, "L", ext.grid.resizewindow_right)
