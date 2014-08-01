@@ -1,9 +1,21 @@
-ext.grid = {}
-
 MARGINX = 0
 MARGINY = 0
-GRIDWIDTH = 6
-GRIDHEIGHT = 4
+
+local function big_if(bool)
+    if bool then return 6 else return 4 end
+end
+
+local function grid_width(win)
+    local win = win or window.focusedwindow()
+    local frame = win:screen():frame()
+    return big_if(frame.w > frame.h)
+end
+
+local function grid_height(win)
+    local win = win or window.focusedwindow()
+    local frame = win:screen():frame()
+    return big_if(frame.w < frame.h)
+end
 
 -- [ UTILITY ] --
 
@@ -17,8 +29,8 @@ local function get_grid(win)
     if not win then hydra.alert("noop") end
     local winframe = win:frame()
     local screenrect = win:screen():frame_without_dock_or_menu()
-    local widthdelta = screenrect.w / GRIDWIDTH
-    local heightdelta = screenrect.h / GRIDHEIGHT
+    local widthdelta = screenrect.w / grid_width(win)
+    local heightdelta = screenrect.h / grid_height(win)
     return {
         x = round((winframe.x - screenrect.x) / widthdelta),
         y = round((winframe.y - screenrect.y) / heightdelta),
@@ -33,10 +45,11 @@ local function set_grid_and_screen(grid, screen, win)
     -- default args
     win = win or window.focusedwindow()
     screen = screen or win:screen()
-
     local screenrect = screen:frame_without_dock_or_menu()
-    local widthdelta = screenrect.w / GRIDWIDTH
-    local heightdelta = screenrect.h / GRIDHEIGHT
+    local verticalScreen = screenrect.w < screenrect.h
+
+    local widthdelta = screenrect.w / grid_width(win)
+    local heightdelta = screenrect.h / grid_height(win)
     local newframe = {
         x = (grid.x * widthdelta) + screenrect.x,
         y = (grid.y * heightdelta) + screenrect.y,
@@ -58,12 +71,6 @@ local function snap_all(win)
     end)
 end
 
-local function adjust_width(by)
-    GRIDWIDTH = math.max(1, GRIDWIDTH + by)
-    hydra.alert("grid is now " .. tostring(GRIDWIDTH) .. " tiles wide", 1)
-    fnutils.map(window.visiblewindows(), snap)
-end
-
 local function grid_map(mutator)
     local grid = get_grid()
     mutator(grid)
@@ -71,12 +78,12 @@ local function grid_map(mutator)
 end
 
 function maximize_window()
-    local f = {x = 0, y = 0, w = GRIDWIDTH, h = 2}
+    local f = {x = 0, y = 0, w = grid_width(), h = grid_height()}
     set_grid_and_screen(f)
 end
 
 local function screen_right()
-    local win = win or window.focusedwindow()
+    local win = window.focusedwindow()
     set_grid_and_screen(get_grid(), win:screen():next(), win)
     grid_map(function(f)
         f.x = 0
@@ -84,22 +91,22 @@ local function screen_right()
 end
 
 local function screen_left()
-    local win = win or window.focusedwindow()
+    local win = window.focusedwindow()
     set_grid_and_screen(get_grid(), win:screen():previous(), win)
     grid_map(function(f)
-        f.x = GRIDWIDTH - f.w
+        f.x = grid_width() - f.w
     end)
 end
 
 local function go_down()
     grid_map(function(f)
-        f.y = math.min(f.y + 1, GRIDHEIGHT)
+        f.y = math.min(f.y + 1, grid_height())
     end)
 end
 
 local function go_up()
     grid_map(function(f)
-        f.y = math.min(f.y - 1, GRIDHEIGHT - f.y)
+        f.y = math.min(f.y - 1, grid_height() - f.y)
     end)
 end
 
@@ -107,7 +114,7 @@ end
 -- We won't actually bind to these, because...
 local function wider()
     grid_map(function(grid)
-        grid.w = math.min(grid.w + 1, GRIDWIDTH)
+        grid.w = math.min(grid.w + 1, grid_width())
     end)
 end
 local function thinner()
@@ -117,7 +124,7 @@ local function thinner()
 end
 local function taller()
     grid_map(function(f)
-        f.h = math.min(f.h + 1, GRIDHEIGHT)
+        f.h = math.min(f.h + 1, grid_height())
     end)
 end
 local function shorter()
@@ -133,13 +140,13 @@ local function edge_is (testFunc, grid)
 end
 
 local function at_left (grid)
-    return grid.x == 0 end
+    return grid.x == 0 and grid.w ~= grid_width() end
 
 local function at_bottom (grid)
-    return grid.y == GRIDHEIGHT - grid.x end
+    return grid.y == grid_height() - grid.x and grid.y ~= 0 end
 
 local function at_right (grid)
-    return grid.x == GRIDWIDTH - grid.w end
+    return grid.x == grid_width() - grid.w and grid.x ~= 0 end
 
 -- Here are the functions we'll actually bind.
 local function go_left()
@@ -152,13 +159,13 @@ end
 local function go_right()
     if edge_is(at_right) then screen_right()
     else grid_map(function (f)
-        f.x = math.min(f.x + 1, GRIDWIDTH - f.w)
+        f.x = math.min(f.x + 1, grid_width() - f.w)
     end) end
 end
 
 local function resize_right()
     if edge_is(at_right)
-    then thinner(); go_right()
+    then go_right(); thinner()
     else wider() end
 end
 
@@ -176,7 +183,7 @@ end
 
 local function resize_down()
     if edge_is(at_bottom)
-    then shorter(); go_down()
+    then go_down(); shorter()
     else taller() end
 end
 
