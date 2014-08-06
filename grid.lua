@@ -165,7 +165,7 @@ end
 
 local function resize_right()
     if edge_is(at_right)
-    then go_right(); thinner()
+    then thinner(); go_right()
     else wider() end
 end
 
