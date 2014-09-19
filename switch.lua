@@ -1,10 +1,11 @@
+--  TODO: When multiple apps match a letter, prefer to switch to apps
+--  that are visible or on the same screen. Test with "Console.app".
+
 -- Special bindings.
 local special_bindings = {
     F = "Firefox",
     X = "Microsoft Excel",
     T = "iTerm",
-    W = "VMware Fusion",
-    V = "Cisco AnyConnect Secure Mobility Client"
 }
 
 -- Used to grab the first letter of an app title.
